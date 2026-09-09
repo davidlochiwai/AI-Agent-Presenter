@@ -1,0 +1,489 @@
+{
+  "id": "powerpoint-director",
+  "name": "PowerPoint Director",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "presenter/session",
+        "responseMode": "lastNode",
+        "options": {
+          "responseData": "firstEntryJson"
+        }
+      },
+      "id": "wh-session",
+      "name": "Webhook session",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "presenter-session"
+    },
+    {
+      "parameters": {
+        "jsCode": "const store = $getWorkflowStaticData('global');\nconst raw = $input.first().json || {};\nconst payload = (raw.body && typeof raw.body === 'object' && !Array.isArray(raw.body))\n  ? raw.body\n  : raw;\nstore.bridgeUrl = String(payload.bridge_url || raw.bridge_url || '').replace(/\\/$/, '');\nstore.bridgeToken = String(payload.bridge_token || raw.bridge_token || '');\nstore.qaUrl = String(\n  payload.qa_url || raw.qa_url || (store.bridgeUrl ? store.bridgeUrl + '/qa' : ''),\n).replace(/\\/$/, '');\nstore.qaDeckId = String(payload.qa_deck_id || raw.qa_deck_id || '');\nstore.callId = payload.call_id || raw.call_id || '';\nstore.slideCount = Number(\n  (payload.status && payload.status.slide_count) || raw.slide_count || 0,\n);\nstore.lastSlide = Number(\n  (payload.status && payload.status.slide) || raw.current_slide || 1,\n);\nstore.beatIndex = 0;\nstore.bookmark = null;\nstore.mode = 'presenting';\nstore.lastAdvanceAt = 0;\nstore.lastSpoken = '';\nstore.lastSpokenEn = '';\nstore.lineLockUntil = 0;\nstore.talkDone = false;\nconst pause = Number(payload.slide_pause_ms);\nstore.slidePauseMs = Number.isFinite(pause) && pause >= 0 ? pause : (store.slidePauseMs || 800);\nreturn [{\n  json: {\n    ok: true,\n    event: 'session_reset',\n    call_id: store.callId,\n    bridge_url: store.bridgeUrl,\n    qa_url: store.qaUrl,\n    qa_deck_id: store.qaDeckId,\n    beat_index: 0,\n    hint: store.bridgeUrl\n      ? 'Cursor reset. You can POST presenter/deliver-next.'\n      : 'bridge_url was empty. Start the local console with a live tunnel (do not click Execute workflow).',\n  },\n}];\n"
+      },
+      "id": "code-reset",
+      "name": "Reset cursor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "presenter/deliver-next",
+        "responseMode": "lastNode",
+        "options": {
+          "responseData": "firstEntryJson"
+        }
+      },
+      "id": "wh-deliver",
+      "name": "Webhook deliver-next",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        280
+      ],
+      "webhookId": "presenter-deliver-next"
+    },
+    {
+      "parameters": {
+        "jsCode": "const store = $getWorkflowStaticData('global');\nconst raw = $input.first().json || {};\nconst payload = (raw.body && typeof raw.body === 'object' && !Array.isArray(raw.body))\n  ? raw.body\n  : raw;\nconst query = (raw.query && typeof raw.query === 'object') ? raw.query : {};\nconst dry = payload.dry === true || payload.dry === 'true'\n  || query.dry === '1' || query.dry === 'true' || raw.dry === true;\nconst fromConsole = payload.source === 'console' || raw.source === 'console';\nconst args = payload.args || raw.args || {};\nconst requestCallId = String(\n  payload.call_id || raw.call_id || args.call_id\n  || (payload.call && payload.call.call_id) || '',\n);\n\nif (!fromConsole && store.callId && requestCallId && requestCallId !== String(store.callId)) {\n  return [{\n    json: {\n      ok: false,\n      skip_http: true,\n      done: false,\n      repeat: false,\n      next_action: 'stay_silent',\n      instruction: 'This request belongs to an inactive presentation. Stay silent.',\n      spoken_text: '',\n      spoken_text_en: '',\n      actions: '',\n      http_url: '',\n      error: 'Stale call_id; the presentation cursor was not changed.',\n    },\n  }];\n}\n\nif (fromConsole) {\n  const incomingBridge = String(\n    payload.bridge_url || raw.bridge_url || query.bridge_url || store.bridgeUrl || '',\n  ).replace(/\\/$/, '');\n  if (incomingBridge) store.bridgeUrl = incomingBridge;\n  const incomingToken = String(payload.bridge_token || raw.bridge_token || '');\n  if (incomingToken) store.bridgeToken = incomingToken;\n  const incomingPause = Number(payload.slide_pause_ms);\n  if (Number.isFinite(incomingPause) && incomingPause >= 0) store.slidePauseMs = incomingPause;\n}\n\nconst beats = [\n  {\n    \"seq\": 1,\n    \"slide\": 1,\n    \"actions\": \"goto_slide:1\",\n    \"script_yue\": \"各位早晨，歡迎出席 Harbour AI 2026 年第二季業務匯報。今日會講公司現況、Harbour Presenter 產品、採用數據、客戶、財務，同埋下半年路線圖。\",\n    \"script_en\": \"Good morning. Welcome to Harbour AI's Q2 2026 business review. We will cover the company, Harbour Presenter, adoption, customers, finance, and the second-half roadmap.\"\n  },\n  {\n    \"seq\": 2,\n    \"slide\": 2,\n    \"actions\": \"goto_slide:2\",\n    \"script_yue\": \"呢頁係今日議程。我會先講公司同產品，之後睇採用數字、客戶案例、財務，同埋下半年路線圖。\",\n    \"script_en\": \"This is the agenda. Company and product first, then adoption, customers, finance, and the second-half roadmap.\"\n  },\n  {\n    \"seq\": 3,\n    \"slide\": 3,\n    \"actions\": \"goto_slide:3\",\n    \"script_yue\": \"Harbour AI 2019 年喺香港成立，而家 86 人，辦公室喺香港、新加坡同倫敦。我哋做企業語音工作流程，唔做消費級 App。今季主打產品係 Harbour Presenter。\",\n    \"script_en\": \"Harbour AI was founded in Hong Kong in 2019. We have 86 people in Hong Kong, Singapore, and London. We build enterprise voice workflows, not a consumer app. This quarter's product is Harbour Presenter.\"\n  },\n  {\n    \"seq\": 4,\n    \"slide\": 4,\n    \"actions\": \"goto_slide:4\",\n    \"script_yue\": \"Harbour Presenter 係粵語優先嘅語音簡報代理。佢跟預先寫好嘅稿講，唔會即場生稿。n8n 負責節奏，桌面 PowerPoint 跟住翻頁。觀眾一打斷，可以跳去相關一頁再接返。\",\n    \"script_en\": \"Harbour Presenter is a Cantonese-first voice presenter. It reads a prepared script; it does not invent the talk. n8n directs pacing; desktop PowerPoint follows. After an interruption it can jump to the matching slide and resume.\"\n  },\n  {\n    \"seq\": 5,\n    \"slide\": 5,\n    \"actions\": \"goto_slide:5\",\n    \"script_yue\": \"截至 2026 年 6 月 30 日，Harbour Presenter 有 41 間付費客戶、1,280 個活躍座位。今季淨新增 11 間，試用轉付費 38%。呢啲數唔包括舊嘅語音客服線。\",\n    \"script_en\": \"As of 30 June 2026, Harbour Presenter has 41 paying customers and 1,280 active seats. Net new this quarter: 11. Trial-to-paid: 38%. These figures exclude the legacy voice-support line.\"\n  },\n  {\n    \"seq\": 6,\n    \"slide\": 6,\n    \"actions\": \"goto_slide:6\",\n    \"script_yue\": \"三個代表客戶。海港銀行用嚟開粵語季度業績會；星航集團用嚟做新航線發佈會；維港零售喺 12 個城市嘅店長大會同步用呢套。合約金額我哋唔公開。\",\n    \"script_en\": \"Three named customers: Harbour Bank for Cantonese quarterly results, Starline Group for route launches, and Victoria Retail for a 12-city store-manager meeting. Contract values are not disclosed.\"\n  },\n  {\n    \"seq\": 7,\n    \"slide\": 7,\n    \"actions\": \"goto_slide:7\",\n    \"script_yue\": \"第二季產品年經常收入係 1,860 萬港元，係港幣唔係美元，較上一季升 22%，毛利率 71%，現金跑道大約 18 個月。\",\n    \"script_en\": \"Q2 product ARR is HK$18.6 million, not US dollars, up 22% quarter on quarter. Gross margin 71%. Cash runway about 18 months.\"\n  },\n  {\n    \"seq\": 8,\n    \"slide\": 8,\n    \"actions\": \"goto_slide:8\",\n    \"script_yue\": \"路線圖方面：2026 年第三季出企業單點登錄同審計日誌；第四季接 Azure 知識庫，觀眾提問可以翻頁；2027 年第一季先做廣東話同英語即場切換。我哋沒有公開 App Store 版計劃。\",\n    \"script_en\": \"Roadmap: Q3 2026 enterprise SSO and audit logs; Q4 Azure knowledge-base Q&A with slide jumps; Cantonese/English live switch in Q1 2027. There is no public App Store plan.\"\n  },\n  {\n    \"seq\": 9,\n    \"slide\": 9,\n    \"actions\": \"goto_slide:9\",\n    \"script_yue\": \"兩個主要風險。嘈雜會議室入面，粵語識別大約仲有 7% 錯字。另外試用隧道每次重開網址都會變，所以我哋需要 IT 批一個穩定域名，同埋再加兩名方案工程師。\",\n    \"script_en\": \"Two risks: about 7% character error for Cantonese in noisy rooms, and ephemeral tunnel hostnames. We need IT to approve a stable domain and two more solutions engineers.\"\n  },\n  {\n    \"seq\": 10,\n    \"slide\": 10,\n    \"actions\": \"goto_slide:10\",\n    \"script_yue\": \"團隊方面，產品同工程 51 人，客戶成功 14 人。而家請緊語音質素同現場實施。倫敦辦公室計劃 2026 年 9 月遷入新址，唔影響今季交付。\",\n    \"script_en\": \"Headcount: 51 in product and engineering, 14 in customer success. We are hiring for speech quality and on-site implementation. The London office moves in September 2026; it does not affect this quarter's delivery.\"\n  },\n  {\n    \"seq\": 11,\n    \"slide\": 11,\n    \"actions\": \"goto_slide:11\",\n    \"script_yue\": \"未來 30 日有四件事：完成三間銀行試點設計、凍結第三季 SSO 範圍、8 月 28 日董事會覆核，同埋下週發送會議紀錄同投影片。\",\n    \"script_en\": \"Next 30 days: finish three bank pilot designs, freeze the Q3 SSO scope, board review on 28 August, and send minutes and slides next week.\"\n  },\n  {\n    \"seq\": 12,\n    \"slide\": 12,\n    \"actions\": \"goto_slide:12\",\n    \"script_yue\": \"多謝各位。資料截至 2026 年 6 月 30 日，只供內部使用。\",\n    \"script_en\": \"Thank you. Figures are as of 30 June 2026 and are internal only.\"\n  }\n];\nconst speakOnly = 'Speak spoken_text verbatim in Cantonese. Stop at the last character. Do not continue into the next slide. After that one line, call deliver_next once. Never call it again in this turn.';\nconst lastLine = 'Speak spoken_text verbatim once. The prepared talk is then complete. Do not repeat it and do not call deliver_next on silence. Remain listening. If the audience asks a real question, call handle_audience_question.';\n\nfunction holdMs(text) {\n  const n = String(text || '').length;\n  const pause = Number(store.slidePauseMs);\n  const extra = Number.isFinite(pause) && pause >= 0 ? pause : 800;\n  return Math.min(40000, Math.max(2500, Math.round((n / 3.8) * 1000 + 400))) + extra;\n}\n\nfunction silentDone() {\n  store.talkDone = true;\n  return [{\n    json: {\n      ok: true,\n      skip_http: true,\n      done: true,\n      auto_continue: false,\n      repeat: false,\n      next_action: 'listen_for_questions',\n      instruction: 'The prepared talk is finished. Do not repeat the last line and do not call deliver_next. Remain listening. If the audience asks a real question, call handle_audience_question.',\n      spoken_text: '',\n      spoken_text_en: '',\n      actions: '',\n      http_url: '',\n      slide: store.lastSlide || null,\n      seq: store.lastSeq || null,\n      beat_index: store.beatIndex,\n      beats_total: beats.length,\n      bridge_url: store.bridgeUrl,\n      error: '',\n    },\n  }];\n}\n\nif (store.beatIndex == null) store.beatIndex = 0;\n\nif (store.mode === 'qa' && store.bookmark != null) {\n  store.beatIndex = store.bookmark;\n  store.bookmark = null;\n  store.mode = 'presenting';\n  store.lastAdvanceAt = 0;\n  store.lineLockUntil = 0;\n  store.talkDone = false;\n}\n\nconst now = Date.now();\n\nif (store.talkDone) {\n  return silentDone();\n}\n\nif (!fromConsole && !dry && store.lineLockUntil && now < store.lineLockUntil) {\n  return [{\n    json: {\n      ok: true,\n      skip_http: true,\n      done: false,\n      auto_continue: false,\n      repeat: true,\n      next_action: 'stay_silent',\n      instruction: 'Stay silent. Do not speak. Do not repeat the previous line. After the room is quiet, call deliver_next once.',\n      spoken_text: '',\n      spoken_text_en: '',\n      actions: '',\n      http_url: '',\n      slide: store.lastSlide || null,\n      seq: store.lastSeq || null,\n      beat_index: store.beatIndex,\n      beats_total: beats.length,\n      bridge_url: store.bridgeUrl,\n      error: '',\n    },\n  }];\n}\n\nif (!store.bridgeUrl) {\n  return [{\n    json: {\n      ok: false,\n      skip_http: true,\n      error: 'No bridge URL. Use the local console button n8n: next beat (that POSTs bridge_url). Do not click Execute workflow.',\n      spoken_text: '',\n      actions: '',\n      auto_continue: false,\n      done: false,\n      received_keys: Object.keys(raw),\n    },\n  }];\n}\n\nif (store.beatIndex >= beats.length) {\n  return silentDone();\n}\n\nconst beat = beats[store.beatIndex];\nstore.beatIndex += 1;\nconst isLast = store.beatIndex >= beats.length;\nconst skipHttp = dry || !beat.actions;\nstore.mode = 'presenting';\nstore.lastAdvanceAt = now;\nstore.lastSpoken = beat.script_yue;\nstore.lastSpokenEn = beat.script_en;\nstore.lastSlide = beat.slide;\nstore.lastSeq = beat.seq;\nstore.lineLockUntil = now + holdMs(beat.script_yue);\nif (isLast) store.talkDone = true;\nreturn [{\n  json: {\n    ok: true,\n    skip_http: skipHttp,\n    done: isLast,\n    auto_continue: false,\n    repeat: false,\n    next_action: isLast ? 'listen_for_questions' : 'speak_then_wait_for_silence',\n    instruction: isLast ? lastLine : speakOnly,\n    spoken_text: beat.script_yue,\n    spoken_text_en: beat.script_en,\n    actions: beat.actions,\n    slide: beat.slide,\n    seq: beat.seq,\n    beat_index: store.beatIndex,\n    beats_total: beats.length,\n    bridge_url: store.bridgeUrl,\n    bridge_token: store.bridgeToken || '',\n    http_url: skipHttp ? '' : (store.bridgeUrl + '/run'),\n  },\n}];\n"
+      },
+      "id": "code-beat",
+      "name": "Next beat",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "do-http",
+              "leftValue": "={{ $json.skip_http }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-http",
+      "name": "Call PowerPoint?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        520,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.http_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.bridge_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ actions: $json.actions, spoken_text: $json.spoken_text, seq: $json.seq, slide: $json.slide }) }}",
+        "options": {
+          "timeout": 20000,
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-run",
+      "name": "POST slide bridge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        180
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const beat = $('Next beat').first().json;\nlet bridge = {};\ntry { bridge = $input.first().json || {}; } catch (e) { bridge = { error: String(e) }; }\nconst bridgeError = bridge.error || bridge.message || '';\nreturn [{\n  json: {\n    ok: beat.ok !== false && !bridgeError,\n    done: !!beat.done,\n    auto_continue: !!beat.auto_continue && !beat.done,\n    repeat: !!beat.repeat,\n    next_action: beat.next_action || '',\n    instruction: beat.instruction || '',\n    do_not_speak: !!beat.do_not_speak,\n    spoken_text: beat.spoken_text || '',\n    spoken_text_en: beat.spoken_text_en || '',\n    slide: (bridge.status && bridge.status.slide) || beat.slide || null,\n    seq: beat.seq || null,\n    applied: bridge.applied || [],\n    error: beat.error || bridgeError || '',\n    bridge_http: bridge,\n  },\n}];\n"
+      },
+      "id": "code-merge",
+      "name": "Merge result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "presenter/handle-question",
+        "responseMode": "lastNode",
+        "options": {
+          "responseData": "firstEntryJson"
+        }
+      },
+      "id": "wh-ask",
+      "name": "Webhook handle-question",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        560
+      ],
+      "webhookId": "presenter-handle-question"
+    },
+    {
+      "parameters": {
+        "jsCode": "const store = $getWorkflowStaticData('global');\nconst raw = $input.first().json || {};\nconst payload = (raw.body && typeof raw.body === 'object' && !Array.isArray(raw.body))\n  ? raw.body\n  : raw;\nconst args = payload.args || raw.args || {};\nconst query = (raw.query && typeof raw.query === 'object') ? raw.query : {};\nconst requestCallId = String(\n  payload.call_id || raw.call_id || args.call_id\n  || (payload.call && payload.call.call_id) || '',\n);\nconst staleSession = !!(store.callId && requestCallId && requestCallId !== String(store.callId));\n\nfunction pickQuestion() {\n  let question = payload.question || args.question || query.question || payload.text || '';\n  if (!question && payload.call && payload.call.transcript) {\n    const lines = String(payload.call.transcript).split('\\n').reverse();\n    for (const line of lines) {\n      if (/^(User|user|Caller):/i.test(line)) {\n        question = line.replace(/^[^:]+:\\s*/, '');\n        break;\n      }\n    }\n  }\n  return String(question || '').trim();\n}\n\nif (!staleSession && store.bookmark == null) {\n  store.bookmark = store.beatIndex == null ? 0 : store.beatIndex;\n}\nif (!staleSession) {\n  store.mode = 'qa';\n  store.lastAdvanceAt = 0;\n  store.lineLockUntil = 0;\n}\n\nreturn [{\n  json: {\n    ok: true,\n    question: staleSession ? '' : pickQuestion(),\n    qa_url: store.qaUrl || (store.bridgeUrl ? store.bridgeUrl + '/qa' : ''),\n    bridge_url: store.bridgeUrl || '',\n    bridge_token: store.bridgeToken || '',\n    call_id: store.callId || '',\n    qa_deck_id: store.qaDeckId || '',\n    current_slide: store.lastSlide || null,\n    slide_count: store.slideCount || null,\n    bookmark: store.bookmark,\n    presentation_done: !!store.talkDone,\n    stale_session: staleSession,\n  },\n}];\n"
+      },
+      "id": "code-ask-stub",
+      "name": "Prepare question",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "do-http-qa",
+              "leftValue": "={{ $json.skip_http }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-qa-http",
+      "name": "Flip for question?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.http_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.bridge_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ actions: $json.actions, interrupt: true }) }}",
+        "options": {
+          "timeout": 20000,
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-qa",
+      "name": "POST question slide",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1150,
+        480
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ask = $('Validate Q&A').first().json;\nlet bridge = {};\ntry { bridge = $input.first().json || {}; } catch (e) { bridge = { error: String(e) }; }\nconst bridgeError = bridge.error || bridge.message || '';\nreturn [{\n  json: {\n    ok: ask.ok !== false && !bridgeError,\n    mode: 'qa',\n    done: false,\n    auto_continue: true,\n    answerable: ask.answerable !== false,\n    decline: !!ask.decline,\n    slide_changed: !!ask.slide_changed,\n    spoken_text: ask.spoken_text || '',\n    spoken_grounding: ask.spoken_grounding || ask.spoken_text || '',\n    spoken_text_en: ask.spoken_text_en || '',\n    next_action: ask.next_action || 'speak_then_call_deliver_next',\n    instruction: ask.instruction || 'Speak spoken_text verbatim. Stop. Then call deliver_next. Do not recap or invite questions.',\n    slide: (bridge.status && bridge.status.slide) || ask.slide || null,\n    recommended_slide: ask.recommended_slide || null,\n    card_id: ask.card_id || '',\n    bookmark: ask.bookmark,\n    presentation_done: !!ask.presentation_done,\n    qa_mode: ask.mode || '',\n    answer_confidence: ask.answer_confidence || 0,\n    slide_confidence: ask.slide_confidence || 0,\n    source_ids: ask.source_ids || [],\n    sources: ask.sources || [],\n    applied: bridge.applied || [],\n    error: ask.error || ask.agent_error || bridgeError || '',\n  },\n}];\n"
+      },
+      "id": "code-merge-qa",
+      "name": "Merge question",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1390,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.qa_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.bridge_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ question: $json.question, current_slide: $json.current_slide, call_id: $json.call_id }) }}",
+        "options": {
+          "timeout": 28000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-qa-agent",
+      "name": "Call Q&A agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        470,
+        560
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare question').first().json || {};\nlet agent = {};\ntry {\n  agent = $input.first().json || {};\n} catch (error) {\n  agent = { ok: false, error: String(error) };\n}\n\nconst question = String(prepared.question || '').trim();\nconst defaultText = question\n  ? '呢條問題我喺現有資料搵唔到可靠答案。我而家接返簡報。'\n  : '我未聽清楚問題。可以再問一次，或者我接返簡報。';\nconst usable = agent.ok === true && typeof agent.spoken_text === 'string'\n  && agent.spoken_text.trim().length > 0;\nconst spokenText = usable ? agent.spoken_text.trim() : defaultText;\n\nlet slide = Number(agent.slide || 0);\nlet recommendedSlide = Number(agent.recommended_slide || agent.slide || 0);\nconst slideCount = Number(prepared.slide_count || 0);\nif (!Number.isInteger(slide) || slide < 1 || (slideCount > 0 && slide > slideCount)) {\n  slide = 0;\n}\nif (\n  !Number.isInteger(recommendedSlide)\n  || recommendedSlide < 1\n  || (slideCount > 0 && recommendedSlide > slideCount)\n) {\n  recommendedSlide = 0;\n}\nconst shouldFlip = usable\n  && agent.should_change_slide === true\n  && slide > 0\n  && slide !== Number(prepared.current_slide || 0)\n  && !!prepared.bridge_url;\n\nreturn [{\n  json: {\n    ok: usable,\n    mode: String(agent.mode || 'safe_abstention'),\n    answerable: usable && agent.answerable !== false,\n    decline: !usable || agent.answerable === false,\n    auto_continue: true,\n    done: false,\n    slide_changed: shouldFlip,\n    spoken_text: spokenText,\n    spoken_grounding: spokenText,\n    spoken_text_en: usable ? String(agent.spoken_text_en || '') : '',\n    next_action: 'speak_then_call_deliver_next',\n    instruction: String(\n      agent.instruction\n      || 'Speak spoken_text verbatim. Stop. Then call deliver_next. Do not recap or invite questions.',\n    ),\n    slide: shouldFlip ? slide : null,\n    recommended_slide: recommendedSlide || null,\n    answer_confidence: Number(agent.answer_confidence || 0),\n    slide_confidence: Number(agent.slide_confidence || 0),\n    source_ids: Array.isArray(agent.source_ids) ? agent.source_ids : [],\n    sources: Array.isArray(agent.sources) ? agent.sources : [],\n    skip_http: !shouldFlip,\n    actions: shouldFlip ? ('goto_slide:' + slide) : '',\n    http_url: shouldFlip ? (prepared.bridge_url + '/run') : '',\n    bridge_token: prepared.bridge_token || '',\n    question,\n    bookmark: prepared.bookmark,\n    presentation_done: !!prepared.presentation_done,\n    agent_error: usable ? '' : String(agent.error || agent.message || 'Q&A agent unavailable'),\n  },\n}];\n"
+      },
+      "id": "code-validate-qa",
+      "name": "Validate Q&A",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook session": {
+      "main": [
+        [
+          {
+            "node": "Reset cursor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook deliver-next": {
+      "main": [
+        [
+          {
+            "node": "Next beat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next beat": {
+      "main": [
+        [
+          {
+            "node": "Call PowerPoint?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call PowerPoint?": {
+      "main": [
+        [
+          {
+            "node": "POST slide bridge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST slide bridge": {
+      "main": [
+        [
+          {
+            "node": "Merge result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook handle-question": {
+      "main": [
+        [
+          {
+            "node": "Prepare question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flip for question?": {
+      "main": [
+        [
+          {
+            "node": "POST question slide",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST question slide": {
+      "main": [
+        [
+          {
+            "node": "Merge question",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare question": {
+      "main": [
+        [
+          {
+            "node": "Call Q&A agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Q&A agent": {
+      "main": [
+        [
+          {
+            "node": "Validate Q&A",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate Q&A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Q&A": {
+      "main": [
+        [
+          {
+            "node": "Flip for question?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

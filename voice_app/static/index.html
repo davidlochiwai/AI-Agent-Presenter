@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIRA Presenter</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,520;9..144,640&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-view="presenter">
+    <div class="app-status">
+      <div class="call-pill" id="callState">Idle</div>
+      <button
+        id="viewToggle"
+        class="view-toggle"
+        type="button"
+        aria-label="Open maintenance console"
+        title="Maintenance console (Ctrl+Shift+M)"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 8.75a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 0 0 0-6.5Zm8.1 4.72-1.72-1.34.04-.63-.04-.63 1.72-1.34-1.8-3.12-2.03.82a7.7 7.7 0 0 0-1.09-.63L14.87 4h-3.6l-.32 2.6c-.38.18-.74.4-1.08.63l-2.04-.82-1.8 3.12 1.73 1.34-.04.63.04.63-1.73 1.34 1.8 3.12 2.04-.82c.34.24.7.45 1.08.63l.32 2.6h3.6l.31-2.6c.39-.18.75-.39 1.09-.63l2.03.82 1.8-3.12Z" />
+        </svg>
+        <span class="visually-hidden">Maintenance console</span>
+      </button>
+    </div>
+
+    <main class="presenter-shell" id="presenterSurface">
+      <section class="presenter-hero">
+        <div
+          class="avatar-stage"
+          id="avatarStage"
+          data-speaking="false"
+          data-processing="false"
+          aria-label="Aira is standing by"
+        >
+          <div class="avatar-visual">
+            <div class="avatar-halo" aria-hidden="true"></div>
+            <div class="avatar-frame">
+              <video
+                id="agentAvatar"
+                class="avatar-image"
+                src="/static/aira-avatar.mp4"
+                poster="/static/aira-avatar-first-frame.png"
+                aria-label="Aira, the AI presenter"
+                preload="metadata"
+                muted
+                playsinline
+                loop
+              ></video>
+            </div>
+            <div class="speech-waves" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          <div class="avatar-copy">
+            <strong>Aira</strong>
+            <span>AI presenter</span>
+            <span class="avatar-status" id="avatarState" aria-live="polite">
+              <i aria-hidden="true"></i>
+              Standing by
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="dialogue-panel" aria-label="Live dialogue">
+        <div class="dialogue-line agent-dialogue">
+          <span>AIRA</span>
+          <p id="agentDialogue" aria-live="polite">Ready when you are.</p>
+        </div>
+        <div class="dialogue-line user-dialogue">
+          <span>You</span>
+          <p id="userDialogue" aria-live="polite">—</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="shell maintenance-shell" id="maintenanceShell">
+      <header class="top">
+        <div>
+          <p class="eyebrow">AI Agent Presenter</p>
+          <h1>Maintenance console</h1>
+        </div>
+        <div class="maintenance-actions">
+          <button id="arrangeBtn" type="button" class="ghost">Arrange windows</button>
+          <button id="presenterModeBtn" type="button">Return to presenter</button>
+        </div>
+      </header>
+
+      <section class="path-card">
+        <label for="pptxPath">PowerPoint file path</label>
+        <div class="path-row">
+          <input
+            id="pptxPath"
+            type="text"
+            spellcheck="false"
+            placeholder="C:\Talks\quarterly-review.pptx"
+          />
+          <button id="loadBtn" type="button">Load deck</button>
+          <button id="sampleBtn" type="button" class="ghost">Load sample</button>
+          <button id="reindexQaBtn" type="button" class="ghost" disabled>Reindex Q&amp;A</button>
+        </div>
+        <p class="hint">Paste the full Windows path to <strong>your</strong> <code>.pptx</code>, then Load deck. The agent speaks rows from <code>data/script.xlsx</code> and answers from files in <code>data/knowledge_sources</code> only.</p>
+      </section>
+
+      <main class="grid">
+        <section class="panel">
+          <h2>Deck</h2>
+          <p class="meta" id="deckMeta">No file loaded.</p>
+          <ol id="slideList" class="slide-list"></ol>
+        </section>
+
+        <section class="panel">
+          <h2>Conversation</h2>
+          <label class="check">
+            <input id="presenterView" type="checkbox" />
+            Start PowerPoint in Presenter View (fullscreen)
+          </label>
+          <label class="check">
+            <input id="startVoice" type="checkbox" />
+            Also start Retell voice (leave off for the n8n smoke test)
+          </label>
+          <div class="actions">
+            <button id="startBtn" type="button" class="primary" disabled>Start</button>
+            <button id="stopBtn" type="button" class="danger" disabled>Stop</button>
+            <button id="endShowBtn" type="button" class="ghost" disabled>End slideshow</button>
+            <button id="n8nNextBtn" type="button" class="ghost" disabled>n8n: next beat</button>
+            <button id="localNextBtn" type="button" class="ghost" disabled>Test local next</button>
+          </div>
+          <p class="hint" id="configHint"></p>
+          <h3>Live transcript</h3>
+          <div id="transcript" class="log"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Presenter tools</h2>
+          <p class="meta">n8n calls the local slide bridge; this log shows COM results.</p>
+          <div id="toolLog" class="log"></div>
+          <div class="status-card" id="liveStatus"></div>
+        </section>
+      </main>
+
+      <section class="panel retell-box">
+        <h2>n8n slide bridge</h2>
+        <p class="hint">
+          Paste the Bridge URL and auth header into n8n’s HTTP node. Retell should call n8n,
+          not this URL. Setup: <code>docs/N8N_DIRECTOR.md</code>.
+        </p>
+        <dl id="bridgeFields" class="fields"></dl>
+      </section>
+
+      <section class="panel retell-box">
+        <h2>Retell voice</h2>
+        <p class="hint">
+          This console still creates the web call. After n8n smoke-test works, point Retell
+          custom functions at n8n. Delete prebuilt <code>end_call</code>.
+        </p>
+        <dl id="retellFields" class="fields"></dl>
+      </section>
+    </div>
+    <script type="module" src="/static/app.js"></script>
+  </body>
+</html>
