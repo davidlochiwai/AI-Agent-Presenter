@@ -35,15 +35,14 @@ function Invoke-JsonPost {
         -Body ($Body | ConvertTo-Json -Depth 8)
 }
 
-$n8nToken = Get-EnvValue "N8N_WEBHOOK_TOKEN"
-$bridgeToken = Get-EnvValue "PRESENTER_TOOL_TOKEN"
-if (-not $n8nToken -or -not $bridgeToken) {
-    throw "N8N_WEBHOOK_TOKEN and PRESENTER_TOOL_TOKEN must be configured in .env."
+$directorToken = Get-EnvValue "DIRECTOR_WEBHOOK_TOKEN"
+if (-not $directorToken) {
+    throw "DIRECTOR_WEBHOOK_TOKEN must be configured in .env."
 }
 
 $appBase = "http://127.0.0.1:8787"
-$n8nBase = "http://127.0.0.1:5678/webhook/presenter"
-$headers = @{ Authorization = "Bearer $n8nToken" }
+$directorBase = "$appBase/webhook/presenter"
+$headers = @{ Authorization = "Bearer $directorToken" }
 
 $session = Invoke-RestMethod -Uri "$appBase/api/session"
 if (-not $session.loaded) {
@@ -123,19 +122,16 @@ foreach ($case in $cases) {
     $slideCount = if ($status.slide_count) { [int]$status.slide_count } else { 0 }
 
     Invoke-JsonPost `
-        -Url "$n8nBase/session" `
+        -Url "$directorBase/session" `
         -Headers $headers `
         -Body @{
             event = "session_started"
             call_id = $callId
-            bridge_url = "http://host.docker.internal:8787/api/bridge"
-            bridge_token = $bridgeToken
-            qa_url = "http://host.docker.internal:8787/api/bridge/qa"
             status = @{ slide = $currentSlide; slide_count = $slideCount }
         } | Out-Null
 
     $response = Invoke-JsonPost `
-        -Url "$n8nBase/handle-question" `
+        -Url "$directorBase/handle-question" `
         -Headers $headers `
         -Body @{
             call = @{ call_id = $callId }

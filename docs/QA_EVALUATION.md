@@ -38,7 +38,7 @@ commercial, legal, security, or customer commitments.
 3. Run:
 
    ```powershell
-   .\n8n-local.cmd
+   .\qdrant-local.cmd
    .\voice-app.cmd
    ```
 
@@ -68,12 +68,11 @@ required on every run.
 The script:
 
 1. verifies that the deck and Azure RAG index are ready;
-2. resets n8n to an isolated evaluation call ID before each case;
-3. sends questions through the real local n8n production webhook;
-4. exercises the private FastAPI Q&A endpoint;
-5. checks grounding sources, important answer terms, slide recommendations,
+2. resets the Python director to an isolated evaluation call ID before each case;
+3. sends questions through the local `handle-question` webhook;
+4. checks grounding sources, important answer terms, slide recommendations,
    abstention, and prompt-injection resistance;
-6. does not print bearer tokens.
+5. does not print bearer tokens.
 
 The six test cases cover:
 
@@ -124,7 +123,7 @@ Expected behavior: no arbitrary slide action and no invented answer.
 
 ## What to inspect after each question
 
-In the browser and n8n execution:
+In the browser and director response:
 
 - `qa_mode` should be `azure_rag` for supported questions;
 - `source_ids` and `sources` should identify the relevant document;
@@ -157,4 +156,3 @@ For each failure, record:
 Raise thresholds when wrong answers or unnecessary slide changes occur. Add
 clearer source text or aliases when correct evidence is not retrieved. Do not
 lower thresholds merely to force all questions to receive an answer.
-

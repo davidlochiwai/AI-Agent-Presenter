@@ -126,13 +126,13 @@
           </label>
           <label class="check">
             <input id="startVoice" type="checkbox" />
-            Also start Retell voice (leave off for the n8n smoke test)
+            Also start Retell voice
           </label>
           <div class="actions">
             <button id="startBtn" type="button" class="primary" disabled>Start</button>
             <button id="stopBtn" type="button" class="danger" disabled>Stop</button>
             <button id="endShowBtn" type="button" class="ghost" disabled>End slideshow</button>
-            <button id="n8nNextBtn" type="button" class="ghost" disabled>n8n: next beat</button>
+            <button id="directorNextBtn" type="button" class="ghost" disabled>Director: next beat</button>
             <button id="localNextBtn" type="button" class="ghost" disabled>Test local next</button>
           </div>
           <p class="hint" id="configHint"></p>
@@ -142,17 +142,17 @@
 
         <section class="panel">
           <h2>Presenter tools</h2>
-          <p class="meta">n8n calls the local slide bridge; this log shows COM results.</p>
+          <p class="meta">The director drives PowerPoint; this log shows COM results.</p>
           <div id="toolLog" class="log"></div>
           <div class="status-card" id="liveStatus"></div>
         </section>
       </main>
 
       <section class="panel retell-box">
-        <h2>n8n slide bridge</h2>
+        <h2>Python director</h2>
         <p class="hint">
-          Paste the Bridge URL and auth header into n8n’s HTTP node. Retell should call n8n,
-          not this URL. Setup: <code>docs/N8N_DIRECTOR.md</code>.
+          Retell should call the public director webhooks below. PowerPoint stays
+          on this PC. Setup: <code>docs/RETELL_SETUP.md</code>.
         </p>
         <dl id="bridgeFields" class="fields"></dl>
       </section>
@@ -160,8 +160,9 @@
       <section class="panel retell-box">
         <h2>Retell voice</h2>
         <p class="hint">
-          This console still creates the web call. After n8n smoke-test works, point Retell
-          custom functions at n8n. Delete prebuilt <code>end_call</code>.
+          This console creates the web call. Keep only <code>deliver_next</code> and
+          <code>handle_audience_question</code> on the Retell agent. Delete prebuilt
+          <code>end_call</code>.
         </p>
         <dl id="retellFields" class="fields"></dl>
       </section>

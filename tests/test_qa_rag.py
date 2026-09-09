@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import unittest
 from pathlib import Path
 
@@ -142,38 +141,9 @@ class QARagTests(unittest.TestCase):
         self.assertIsNone(result["slide"])
         self.assertEqual(result["source_ids"], [])
 
-    def test_workflow_contains_validated_rag_branch(self) -> None:
-        root = Path(__file__).resolve().parents[1]
-        workflow = json.loads((root / "n8n" / "powerpoint-director.json").read_text(encoding="utf-8"))
-        names = {node["name"] for node in workflow["nodes"]}
-        self.assertTrue(
-            {
-                "Prepare question",
-                "Call Q&A agent",
-                "Validate Q&A",
-                "Flip for question?",
-                "POST question slide",
-                "Merge question",
-            }.issubset(names)
-        )
-        self.assertEqual(
-            workflow["connections"]["Webhook handle-question"]["main"][0][0]["node"],
-            "Prepare question",
-        )
-        self.assertEqual(
-            workflow["connections"]["Validate Q&A"]["main"][0][0]["node"],
-            "Flip for question?",
-        )
-        next_beat = next(node for node in workflow["nodes"] if node["name"] == "Next beat")
-        prepare = next(node for node in workflow["nodes"] if node["name"] == "Prepare question")
-        self.assertIn("Stale call_id", next_beat["parameters"]["jsCode"])
-        self.assertIn("listen_for_questions", next_beat["parameters"]["jsCode"])
-        self.assertIn("staleSession", prepare["parameters"]["jsCode"])
-        merge = next(node for node in workflow["nodes"] if node["name"] == "Merge question")
-        self.assertIn("presentation_done", merge["parameters"]["jsCode"])
-
-    def test_retell_prompt_keeps_listening_after_last_slide(self) -> None:
-        self.assertEqual(PROMPT_MARKER, "harbour-presenter-prompt v12")
+    def test_director_prompt_keeps_listening_after_last_slide(self) -> None:
+        self.assertEqual(PROMPT_MARKER, "harbour-presenter-prompt v13")
+        self.assertNotIn("n8n", GENERAL_PROMPT.lower())
         self.assertNotIn("stay silent forever", GENERAL_PROMPT)
         self.assertIn("including after the prepared talk is finished", GENERAL_PROMPT)
         self.assertIn("presentation_done is true", GENERAL_PROMPT)

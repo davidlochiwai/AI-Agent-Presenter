@@ -5,34 +5,29 @@ Q&A branch:
 
 ```text
 Retell handle_audience_question
-  -> local n8n (bookmark the script cursor)
-  -> private FastAPI Q&A endpoint
+  -> Python director (bookmark the script cursor)
   -> Azure OpenAI embeddings + Qdrant retrieval
   -> Azure OpenAI grounded JSON answer
-  -> n8n validation
-  -> optional private PowerPoint slide jump
+  -> optional PowerPoint slide jump
   -> Retell speaks the answer
   -> deliver_next restores the bookmark
 ```
 
-n8n remains the director. The Q&A model cannot call PowerPoint and cannot
-change the script cursor. It may only recommend a slide from retrieved
-candidates. n8n validates that recommendation before converting it to
-`goto_slide:N`.
+The Python director owns presentation state. The Q&A model cannot call
+PowerPoint and cannot change the script cursor. It may only recommend a slide
+from retrieved candidates. The director validates that recommendation before
+converting it to `goto_slide:N`.
 
-The Azure key stays in the local application's `.env`. It is not stored in the
-workflow export or exposed to Retell. This also avoids disabling n8n 2.x's
-default protection against environment-variable access in Code nodes.
+The Azure key stays in the local application's `.env`. It is not exposed to
+Retell.
 
 ## Services
 
-- n8n: `http://127.0.0.1:5678`
 - Qdrant: `http://127.0.0.1:6333`
-- FastAPI: `http://127.0.0.1:8787`
-- n8n-to-FastAPI: `http://host.docker.internal:8787/api/bridge`
-- Retell-to-n8n: the current Cloudflare or named-tunnel HTTPS origin
+- FastAPI / Python director: `http://127.0.0.1:8787`
+- Retell-to-director: the current Cloudflare or named-tunnel HTTPS origin
 
-`n8n-local.cmd` starts both n8n and Qdrant. Both use named Docker volumes.
+`qdrant-local.cmd` starts Qdrant with a named Docker volume.
 
 ## Azure OpenAI configuration
 
@@ -93,8 +88,7 @@ console after changing content while the app is running.
 
 Current extraction covers text, tables, chart values, and notes. A screenshot
 or diagram with no text needs a written description in speaker notes or a
-knowledge-source document. Vision-based slide description can be added later
-as an ingestion-only step without changing the live Q&A path.
+knowledge-source document.
 
 ## Retrieval and answer validation
 
@@ -135,40 +129,19 @@ QA_AZURE_TIMEOUT_S=12
 Raise confidence thresholds to reduce incorrect answers or unnecessary slide
 jumps. Lower them only after inspecting real retrieval logs.
 
-## n8n Q&A branch
-
-Import or update `n8n/powerpoint-director.json`, preserve Header Auth on all
-three webhooks, then publish it. The Q&A branch is:
-
-```text
-Webhook handle-question
-  -> Prepare question
-  -> Call Q&A agent
-  -> Validate Q&A
-  -> Flip for question?
-  -> POST question slide
-  -> Merge question
-```
-
-`Prepare question` stores the original `beatIndex` as `bookmark`.
-`Call Q&A agent` calls the authenticated private endpoint
-`/api/bridge/qa`. `Validate Q&A` constructs slide actions only from a validated
-integer within the loaded deck's range. After Retell speaks, its next
-`deliver_next` call restores `beatIndex` from `bookmark`.
-
 ## Test without Retell
 
 For the supplied multi-document evaluation corpus and automated test runner,
 see [QA_EVALUATION.md](QA_EVALUATION.md).
 
 1. Start Docker Desktop.
-2. Run `n8n-local.cmd`.
+2. Run `qdrant-local.cmd`.
 3. Run `voice-app.cmd`.
 4. Open `http://127.0.0.1:8787` and load the sample deck.
 5. Wait until **Q&A knowledge** reports ready.
 6. Start the slideshow without Retell.
-7. POST a test question to the local n8n production webhook using the same
-   `Authorization: Bearer <N8N_WEBHOOK_TOKEN>` header.
+7. POST a test question to `http://127.0.0.1:8787/webhook/presenter/handle-question`
+   using `Authorization: Bearer <DIRECTOR_WEBHOOK_TOKEN>`.
 
 Example body:
 
@@ -183,10 +156,8 @@ the confidence threshold allows the jump.
 
 ## Operational limitations
 
-- n8n workflow static state still represents one active presentation. Multiple
-  simultaneous calls require a transactional state store keyed by `call_id`.
-  The Docker configuration therefore limits production executions to one at a
-  time, and the workflow rejects a mismatched Retell `call_id`.
+- Director state represents one active presentation. A mismatched Retell
+  `call_id` is rejected.
 - Quick-tunnel hostnames remain temporary; the app updates Retell each boot.
 - The first index of a changed corpus uses Azure embedding calls and may take
   longer. Subsequent starts reuse Qdrant.

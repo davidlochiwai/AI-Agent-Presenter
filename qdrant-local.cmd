@@ -8,11 +8,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-docker compose -f compose.n8n.yml up -d
+docker compose up -d qdrant
 if errorlevel 1 exit /b %errorlevel%
 
 echo.
-echo Local n8n is starting at http://127.0.0.1:5678
 echo Qdrant knowledge index is starting at http://127.0.0.1:6333
-echo Run n8n-local-logs.cmd if the page is not ready after one minute.
-start "" http://127.0.0.1:5678

@@ -63,6 +63,11 @@ class PresenterUiTests(unittest.TestCase):
         self.assertIn('.avatar-stage[data-processing="true"]', self.css)
         self.assertIn("@keyframes processing-spin", self.css)
 
+    def test_maintenance_does_not_mention_n8n(self) -> None:
+        self.assertNotIn("n8n", self.html.lower())
+        self.assertNotIn("n8n", self.javascript.lower())
+        self.assertIn('id="directorNextBtn"', self.html)
+
     def test_presenter_and_maintenance_surfaces_are_mutually_exclusive(self) -> None:
         self.assertIn(
             'body[data-view="presenter"] .maintenance-shell',

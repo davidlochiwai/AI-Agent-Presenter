@@ -1,4 +1,4 @@
-"""Single source of truth for the sample deck, script.xlsx, knowledge cards, and n8n beats."""
+"""Single source of truth for the sample deck, script.xlsx, and knowledge cards."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ SLIDES: list[dict] = [
         "bullets": [
             "粵語優先嘅語音簡報代理",
             "跟預先寫好嘅稿講，唔會即場生稿",
-            "n8n 做導演，桌面 PowerPoint 跟住翻頁",
+            "本機導演控制節奏，桌面 PowerPoint 跟住翻頁",
             "觀眾打斷之後，可以跳去相關一頁再接返",
         ],
         "notes": "Product. Knowledge k_product.",
@@ -164,8 +164,8 @@ SCRIPT: list[dict] = [
         "seq": 4,
         "slide": 4,
         "actions": "goto_slide:4",
-        "script_yue": "Harbour Presenter 係粵語優先嘅語音簡報代理。佢跟預先寫好嘅稿講，唔會即場生稿。n8n 負責節奏，桌面 PowerPoint 跟住翻頁。觀眾一打斷，可以跳去相關一頁再接返。",
-        "script_en": "Harbour Presenter is a Cantonese-first voice presenter. It reads a prepared script; it does not invent the talk. n8n directs pacing; desktop PowerPoint follows. After an interruption it can jump to the matching slide and resume.",
+        "script_yue": "Harbour Presenter 係粵語優先嘅語音簡報代理。佢跟預先寫好嘅稿講，唔會即場生稿。本機導演負責節奏，桌面 PowerPoint 跟住翻頁。觀眾一打斷，可以跳去相關一頁再接返。",
+        "script_en": "Harbour Presenter is a Cantonese-first voice presenter. It reads a prepared script; it does not invent the talk. The local director controls pacing; desktop PowerPoint follows. After an interruption it can jump to the matching slide and resume.",
         "notes": "Auto-continue.",
     },
     {
@@ -263,9 +263,9 @@ KNOWLEDGE: list[dict] = [
         "card_id": "k_product",
         "slide": 4,
         "topic": "Harbour Presenter 係乜",
-        "keywords": "Presenter,產品,粵語,跟稿,n8n,簡報代理,product",
-        "fact_yue": "Harbour Presenter 係粵語優先語音簡報代理，跟預先寫好嘅稿講，唔即場生稿。n8n 做導演，PowerPoint 跟住翻頁。呢頁就係產品頁。",
-        "fact_en": "Harbour Presenter is a Cantonese-first voice presenter that reads a prepared script. n8n directs; PowerPoint follows. That is the product slide.",
+        "keywords": "Presenter,產品,粵語,跟稿,導演,簡報代理,product,director",
+        "fact_yue": "Harbour Presenter 係粵語優先語音簡報代理，跟預先寫好嘅稿講，唔即場生稿。本機導演控制節奏，PowerPoint 跟住翻頁。呢頁就係產品頁。",
+        "fact_en": "Harbour Presenter is a Cantonese-first voice presenter that reads a prepared script. The local director controls pacing; PowerPoint follows. That is the product slide.",
     },
     {
         "card_id": "k_adoption",
@@ -357,36 +357,3 @@ KNOWLEDGE: list[dict] = [
     },
 ]
 
-
-def n8n_knowledge() -> list[dict]:
-    cards = []
-    for row in KNOWLEDGE:
-        slide = row.get("slide")
-        if slide == "" or slide is None:
-            slide = None
-        else:
-            slide = int(slide)
-        cards.append(
-            {
-                "card_id": row["card_id"],
-                "slide": slide,
-                "topic": row["topic"],
-                "keywords": row["keywords"],
-                "fact_yue": row["fact_yue"],
-                "fact_en": row["fact_en"],
-            }
-        )
-    return cards
-
-
-def n8n_beats() -> list[dict]:
-    return [
-        {
-            "seq": row["seq"],
-            "slide": row["slide"],
-            "actions": row["actions"],
-            "script_yue": row["script_yue"],
-            "script_en": row["script_en"],
-        }
-        for row in SCRIPT
-    ]

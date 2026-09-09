@@ -8,9 +8,10 @@ This is fictional test material for the Harbour AI demonstration.
 
 ## Data-flow boundaries
 
-The PowerPoint file remains on the presentation computer. Local n8n directs the
-script, and the private FastAPI bridge controls desktop PowerPoint. The raw
-PowerPoint bridge is not intended to be reachable from the public internet.
+The PowerPoint file remains on the presentation computer. The local Python
+director owns the script, and the private FastAPI bridge controls desktop
+PowerPoint. The raw PowerPoint bridge is not intended to be reachable from the
+public internet.
 
 Audience questions and the retrieved reference snippets needed to answer those
 questions are sent to the configured Azure OpenAI resource. Retell processes
@@ -36,10 +37,8 @@ audio?” is therefore no for this evaluation environment.
 
 The design uses two independent bearer secrets:
 
-- the n8n webhook token protects Retell and the local application when they
-  call n8n;
-- the presenter-tool token protects calls from n8n to the private FastAPI
-  PowerPoint bridge.
+- the director webhook token protects Retell when it calls the local director;
+- the presenter-tool token protects local PowerPoint bridge calls.
 
 The secrets must not be logged, spoken, placed in slide notes, or copied into a
 knowledge document.

@@ -1,8 +1,8 @@
-"""Grounded Q&A retrieval for the n8n presenter.
+"""Grounded Q&A retrieval for the local presenter.
 
-The n8n workflow owns presentation state and calls this service through the
-private bridge. This module owns content extraction, Azure OpenAI calls,
-retrieval, and strict validation. It never executes PowerPoint actions.
+The Python director owns presentation state and calls this service. This
+module owns content extraction, Azure OpenAI calls, retrieval, and strict
+validation. It never executes PowerPoint actions.
 """
 
 from __future__ import annotations

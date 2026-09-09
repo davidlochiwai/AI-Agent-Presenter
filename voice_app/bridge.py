@@ -1,4 +1,4 @@
-"""Thin PowerPoint adapter for n8n. No script cursor, no LLM."""
+"""Thin PowerPoint adapter for the local director. No script cursor, no LLM."""
 
 from __future__ import annotations
 
@@ -140,7 +140,3 @@ def snapshot_for_bridge(runtime: PresenterRuntime) -> dict[str, Any]:
         "pending_speech": ready["pending_speech"],
         "idle_ms": ready["idle_ms"],
     }
-
-
-# Backward-compatible name for older integrations.
-snapshot_for_n8n = snapshot_for_bridge

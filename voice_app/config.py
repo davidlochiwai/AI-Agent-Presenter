@@ -31,21 +31,10 @@ APP_PORT = int(_env("APP_PORT", "8787") or "8787")
 VERIFY_RETELL_SIGNATURE = _bool("VERIFY_RETELL_SIGNATURE", True)
 AUTO_TUNNEL = _bool("AUTO_TUNNEL", True)
 NGROK_AUTHTOKEN = _env("NGROK_AUTHTOKEN")
-N8N_SESSION_WEBHOOK_URL = _env("N8N_SESSION_WEBHOOK_URL")
-N8N_DELIVER_NEXT_WEBHOOK_URL = _env("N8N_DELIVER_NEXT_WEBHOOK_URL")
-N8N_PUBLIC_WEBHOOK_URL = _env("N8N_PUBLIC_WEBHOOK_URL").rstrip("/")
-N8N_AUTO_TUNNEL = _bool("N8N_AUTO_TUNNEL", False)
-N8N_WEBHOOK_TOKEN = _env("N8N_WEBHOOK_TOKEN")
-N8N_BRIDGE_URL = _env("N8N_BRIDGE_URL").rstrip("/")
 DIRECTOR_PUBLIC_URL = (_env("DIRECTOR_PUBLIC_URL") or PUBLIC_BASE_URL).rstrip("/")
-DIRECTOR_AUTO_TUNNEL = _bool(
-    "DIRECTOR_AUTO_TUNNEL",
-    AUTO_TUNNEL or N8N_AUTO_TUNNEL,
-)
+DIRECTOR_AUTO_TUNNEL = _bool("DIRECTOR_AUTO_TUNNEL", AUTO_TUNNEL)
 _director_env_token = _env("DIRECTOR_WEBHOOK_TOKEN")
-DIRECTOR_WEBHOOK_TOKEN = (
-    _director_env_token or N8N_WEBHOOK_TOKEN or secrets.token_urlsafe(32)
-)
+DIRECTOR_WEBHOOK_TOKEN = _director_env_token or secrets.token_urlsafe(32)
 SAMPLE_DECK_PATH = ROOT / "data" / "sample_talk.pptx"
 SAMPLE_SCRIPT_PATH = ROOT / "data" / "script.xlsx"
 _qa_knowledge_dir = Path(_env("QA_KNOWLEDGE_DIR", "data/knowledge_sources")).expanduser()
@@ -89,7 +78,6 @@ PRESENTER_SLIDE_RATIO = max(0.5, min(0.8, _float("PRESENTER_SLIDE_RATIO", 0.67))
 
 # Silence after a line before the next spoken_text. Also used as the Retell reminder
 # unless RETELL_REMINDER_TRIGGER_MS is set.
-N8N_LOCAL_PORT = max(1, min(65535, _int("N8N_LOCAL_PORT", 5678)))
 SLIDE_PAUSE_MS = max(0, _int("SLIDE_PAUSE_MS", 800))
 _reminder = _env("RETELL_REMINDER_TRIGGER_MS")
 RETELL_REMINDER_TRIGGER_MS = max(0, int(_reminder) if _reminder else SLIDE_PAUSE_MS)
@@ -105,36 +93,6 @@ QA_AZURE_TIMEOUT_S = max(3.0, min(18.0, _float("QA_AZURE_TIMEOUT_S", 12.0)))
 QA_MIN_ANSWER_CONFIDENCE = max(0.0, min(1.0, _float("QA_MIN_ANSWER_CONFIDENCE", 0.35)))
 QA_MIN_SLIDE_CONFIDENCE = max(0.0, min(1.0, _float("QA_MIN_SLIDE_CONFIDENCE", 0.45)))
 
-
-def n8n_bridge_url(public_base: str = "") -> str:
-    """Return the bridge address n8n should call.
-
-    A local n8n container uses host.docker.internal. Cloud n8n falls back to
-    the app's public tunnel.
-    """
-    if N8N_BRIDGE_URL:
-        return N8N_BRIDGE_URL
-    base = public_base.rstrip("/")
-    return f"{base}/api/bridge" if base else ""
-
-
-def n8n_deliver_next_url() -> str:
-    if N8N_DELIVER_NEXT_WEBHOOK_URL:
-        return N8N_DELIVER_NEXT_WEBHOOK_URL.rstrip("/")
-    session = N8N_SESSION_WEBHOOK_URL.rstrip("/")
-    if session.endswith("/presenter/session"):
-        return session[: -len("/presenter/session")] + "/presenter/deliver-next"
-    return ""
-
-
-def n8n_handle_question_url() -> str:
-    if session := N8N_SESSION_WEBHOOK_URL.rstrip("/"):
-        if session.endswith("/presenter/session"):
-            return session[: -len("/presenter/session")] + "/presenter/handle-question"
-    deliver = n8n_deliver_next_url()
-    if deliver.endswith("/presenter/deliver-next"):
-        return deliver[: -len("/presenter/deliver-next")] + "/presenter/handle-question"
-    return ""
 
 _env_token = _env("PRESENTER_TOOL_TOKEN")
 PRESENTER_TOOL_TOKEN = _env_token or secrets.token_urlsafe(24)

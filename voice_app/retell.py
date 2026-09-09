@@ -379,10 +379,6 @@ def sync_director_function_endpoints(base_url: str) -> dict[str, Any]:
     return {"ok": True, "changed": True, "notes": notes, "urls": targets}
 
 
-# Backward-compatible import for older callers during migration.
-sync_n8n_function_endpoints = sync_director_function_endpoints
-
-
 def sync_mcp_endpoint(mcp_url: str) -> dict[str, Any]:
     """Point the agent's saved MCP server at this process's current public URL."""
     info = inspect_agent_tools()

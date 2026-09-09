@@ -529,7 +529,7 @@ els.localNextBtn.addEventListener("click", async () => {
     appendLog(els.toolLog, "tool", result.message || JSON.stringify(result).slice(0, 300));
     if (result.status) renderStatus(result.status);
     els.configHint.textContent = result.ok
-      ? "PowerPoint COM works on this PC. The n8n path is what is broken."
+      ? "PowerPoint COM works on this PC."
       : (result.error || "Local next failed.");
   } catch (error) {
     appendLog(els.toolLog, "tool", `local: ${error.message}`);

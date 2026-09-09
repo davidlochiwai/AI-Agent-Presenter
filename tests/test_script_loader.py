@@ -17,6 +17,9 @@ class ScriptLoaderTests(unittest.TestCase):
         self.assertEqual(beats[0]["seq"], 1)
         self.assertTrue(beats[0]["script_yue"])
         self.assertTrue(str(beats[0]["actions"]).startswith("goto_slide:"))
+        product = next(beat for beat in beats if beat["slide"] == 4)
+        self.assertNotIn("n8n", product["script_yue"].lower())
+        self.assertNotIn("n8n", product["script_en"].lower())
 
     def test_reads_custom_workbook(self) -> None:
         workbook = Workbook()

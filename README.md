@@ -6,13 +6,14 @@ The same `PresenterController` API is what the agent should call. This package o
 
 ## Voice agent (browser + Retell)
 
-Local web console: load a `.pptx`, press **Start** / **Stop**. n8n directs the talk; this PC drives PowerPoint. The sample pack is a 12-slide Harbour AI Q2 review plus matching `data/script.xlsx` and knowledge files in `data/knowledge_sources`.
+Local web console: load a `.pptx`, press **Start** / **Stop**. The Python director owns the script and Q&A; this PC drives PowerPoint. The sample pack is a 12-slide Harbour AI Q2 review plus matching `data/script.xlsx` and knowledge files in `data/knowledge_sources`.
 
 ```powershell
 copy .env.example .env
 notepad .env
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m voice_app.sample_pack
+.\qdrant-local.cmd
 voice-app.cmd
 ```
 
@@ -30,26 +31,19 @@ If either window is moved, choose **Arrange windows** in maintenance mode.
 Set `PRESENTER_SPLIT_LAYOUT=false` to disable automatic placement, or adjust
 `PRESENTER_SLIDE_RATIO` in `.env` (accepted range: `0.50`–`0.80`).
 
-- Local n8n Docker setup and upgrade: [docs/LOCAL_N8N.md](docs/LOCAL_N8N.md)
 - Grounded Azure OpenAI Q&A: [docs/QA_RAG.md](docs/QA_RAG.md)
 - Q&A evaluation corpus and tests: [docs/QA_EVALUATION.md](docs/QA_EVALUATION.md)
-- Existing n8n Cloud setup: [docs/N8N_DIRECTOR.md](docs/N8N_DIRECTOR.md)
 - Retell voice: [docs/RETELL_SETUP.md](docs/RETELL_SETUP.md)
 
-For the local director:
-
-```powershell
-.\n8n-local.cmd
-.\voice-app.cmd
-```
-
-With `N8N_AUTO_TUNNEL=true` (set by `configure-local-n8n.ps1`), each `voice-app.cmd` start opens a fresh Cloudflare quick tunnel to n8n and patches Retell. Do not also run `n8n-quick-tunnel.cmd`.
+With `AUTO_TUNNEL=true`, each `voice-app.cmd` start opens a fresh Cloudflare
+quick tunnel to the Python director and patches Retell.
 
 ## Requirements
 
 - Windows with a desktop session (not a headless service)
 - Microsoft PowerPoint (Office 2016 / Microsoft 365)
 - Python 3.11+
+- Docker Desktop (for the local Qdrant knowledge index)
 
 ## Setup
 

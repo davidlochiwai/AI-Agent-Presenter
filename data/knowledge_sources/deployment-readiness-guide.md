@@ -12,7 +12,7 @@ The demonstration configuration requires:
 
 - Windows 11;
 - licensed Microsoft 365 desktop PowerPoint;
-- Docker Desktop for local n8n and Qdrant;
+- Docker Desktop for local Qdrant;
 - a working microphone and speaker;
 - outbound HTTPS access to Retell, Azure OpenAI, and Cloudflare;
 - at least 8 GB of available memory and 5 GB of free disk space.
@@ -26,13 +26,12 @@ The customer must complete the network check at least two business days before
 the live presentation. The check confirms outbound HTTPS on port 443 and local
 access to:
 
-- `127.0.0.1:5678` for n8n;
 - `127.0.0.1:6333` for Qdrant;
 - `127.0.0.1:8787` for the presenter console.
 
-Ports 5678, 6333, and 8787 should not be exposed directly to the public
-internet. Retell reaches only the authenticated n8n webhooks through the
-approved Cloudflare hostname.
+Ports 6333 and 8787 should not be exposed directly to the public internet.
+Retell reaches only the authenticated director webhooks through the approved
+Cloudflare hostname.
 
 ## Content freeze and rehearsal
 
@@ -48,11 +47,11 @@ three.
 ## Start-of-day checklist
 
 1. Start Docker Desktop.
-2. Run `n8n-local.cmd`.
+2. Run `qdrant-local.cmd`.
 3. Run `voice-app.cmd`.
-4. Confirm n8n and Qdrant report healthy.
+4. Confirm Qdrant reports healthy.
 5. Load the final deck and wait for Q&A indexing.
-6. Verify the public n8n tunnel and Retell function synchronization.
+6. Verify the public director tunnel and Retell function synchronization.
 7. Run one scripted beat and one known Q&A question before admitting the
    audience.
 
